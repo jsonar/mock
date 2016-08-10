@@ -1,3 +1,7 @@
+from copy import copy
+from bson import ObjectId
+
+
 def match(doc, _filter):
     if _filter:
         return all([doc.get(k) == v for k, v in _filter.items()])
@@ -13,9 +17,14 @@ class MockMongoClient:
         return self.db
 
 
+def add_id(doc):
+    doc['_id'] = doc.get('_id') or ObjectId()
+    return doc
+
+
 class MockCollection:
     def __init__(self, data=None):
-        self.data = [] if data is None else data
+        self.data = [add_id(d) for d in data or []]
 
     def find_one(self, _filter=None):
         return next((e for e in self.data if match(e, _filter)), None)
@@ -24,21 +33,19 @@ class MockCollection:
         return [e for e in self.data if match(e, _filter)]
 
     def insert_one(self, doc):
-        self.data.append(doc)
+        self.data.append(add_id(doc))
 
     def insert_many(self, docs):
-        self.data.extend(docs)
-
-    def replace_one(self, old, new):
-        e = self.find_one(old)
-        if e:
-            self.data.remove(e)
-        self.data.append(new)
+        self.data.extend([add_id(d) for d in docs or []])
 
     def delete_one(self, _filter):
         e = self.find_one(_filter)
         if e:
             self.data.remove(e)
+
+    def replace_one(self, old, new):
+        self.delete_one(old)
+        self.insert_one(new)
 
     def count(self, _filter=None):
         return len(self.find(_filter))
