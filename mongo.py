@@ -11,6 +11,7 @@ class MockMongoClient:
     def __init__(self, uri):
         self.db = MockDatabase()
         self.uri = uri
+        self.is_primary = True
 
     def get_default_database(self):
         return self.db
