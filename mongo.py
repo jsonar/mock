@@ -7,6 +7,16 @@ def match(doc, _filter):
     return True
 
 
+class UpdateResult:
+    def __init__(self, count):
+        self.modified_count = count
+
+
+class DeleteResult:
+    def __init__(self, count):
+        self.deleted_count = count
+
+
 class MockMongoClient:
     def __init__(self, uri):
         self.db = MockDatabase()
@@ -42,10 +52,12 @@ class MockCollection:
         e = self.find_one(_filter)
         if e:
             self.data.remove(e)
+        return DeleteResult(1 if e else 0)
 
     def replace_one(self, old, new):
         self.delete_one(old)
         self.insert_one(new)
+        return UpdateResult(1)
 
     def count(self, _filter=None):
         return len(self.find(_filter))
@@ -55,6 +67,23 @@ class MockSystemCollection(MockCollection):
     def __init__(self, data=None):
         super().__init__(data)
         self.views = MockCollection()
+        self.ingest = MockCollection([
+            {
+                '_id': 'instance',
+                'allow_duplicate_ids': True,
+                'buffer_size': 1 << 30
+            },
+            {
+                '_id': 'exception',
+                'allow_duplicate_ids': True,
+                'buffer_size': 1 << 30
+            },
+            {
+                '_id': 'full_sql',
+                'allow_duplicate_ids': True,
+                'buffer_size': 8 << 30
+            }
+        ])
 
 
 class MockDatabase:
