@@ -27,6 +27,14 @@ class MockMongoClient:
         return self.db
 
 
+class MockException(Exception):
+    pass
+
+
+class DuplicateKeyError(MockException):
+    pass
+
+
 def add_id(doc):
     doc['_id'] = doc.get('_id') or ObjectId()
     return doc
@@ -43,10 +51,15 @@ class MockCollection:
         return [e for e in self.data if match(e, _filter)]
 
     def insert_one(self, doc):
-        self.data.append(add_id(doc))
+        doc_with_id = add_id(doc)
+        self._check_duplicate(doc_with_id)
+        self.data.append(doc_with_id)
 
     def insert_many(self, docs):
-        self.data.extend([add_id(d) for d in docs or []])
+        docs_with_id = [add_id(d) for d in docs or []]
+        for doc in docs_with_id:
+            self._check_duplicate(doc)
+        self.data.extend(docs_with_id)
 
     def delete_one(self, _filter):
         e = self.find_one(_filter)
@@ -62,6 +75,9 @@ class MockCollection:
     def count(self, _filter=None):
         return len(self.find(_filter))
 
+    def _check_duplicate(self, doc):
+        if self.find({'_id': doc['_id']}):
+            raise DuplicateKeyError
 
 class MockSystemCollection(MockCollection):
     def __init__(self, data=None):
@@ -95,11 +111,13 @@ class MockDatabase:
 class MockGidCollection(MockCollection):
     def __init__(self, data=None):
         super().__init__(data or [
-            {'gid': 1, 'gmachine_id': '1', 'hostname': 'host1', 'version': 9,
-             'current': 'True'},
-            {'gid': 2, 'gmachine_id': '2', 'hostname': 'host2', 'version': 9},
-            {'gid': 3, 'gmachine_id': '2', 'hostname': 'host2', 'version': 10,
-             'current': True},
-            {'gid': 4, 'gmachine_id': '3', 'current': True},
-            {'gid': 5, 'gmachine_id': '4', 'version': 10, 'current': True}
+            {'_id': 1, 'gid': 1, 'gmachine_id': '1', 'hostname': 'host1',
+             'version': 9, 'current': 'True'},
+            {'_id': 2, 'gid': 2, 'gmachine_id': '2', 'hostname': 'host2',
+             'version': 9},
+            {'_id': 3, 'gid': 3, 'gmachine_id': '2', 'hostname': 'host2',
+             'version': 10, 'current': True},
+            {'_id': 4, 'gid': 4, 'gmachine_id': '3', 'current': True},
+            {'_id': 5, 'gid': 5, 'gmachine_id': '4', 'version': 10,
+             'current': True}
         ])
