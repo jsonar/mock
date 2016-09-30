@@ -8,13 +8,20 @@ def match(doc, _filter):
 
 
 class UpdateResult:
-    def __init__(self, count):
-        self.modified_count = count
+    def __init__(self, modified, matched):
+        self.modified_count = modified
+        self.matched_count = matched
+        self.upserted_id = None
 
 
 class DeleteResult:
     def __init__(self, count):
         self.deleted_count = count
+
+
+class InsertManyResult:
+    def __init__(self, ids):
+        self.inserted_ids = ids
 
 
 class MockMongoClient:
@@ -47,6 +54,7 @@ class MockCollection:
 
     def insert_many(self, docs):
         self.data.extend([add_id(d) for d in docs or []])
+        return InsertManyResult([d['_id'] for d in docs or []])
 
     def delete_one(self, _filter):
         e = self.find_one(_filter)
@@ -54,10 +62,14 @@ class MockCollection:
             self.data.remove(e)
         return DeleteResult(1 if e else 0)
 
-    def replace_one(self, old, new):
-        self.delete_one(old)
-        self.insert_one(new)
-        return UpdateResult(1)
+    def replace_one(self, old, new, upsert=False):
+        d = self.delete_one(old)
+        ret = UpdateResult(d.deleted_count, d.deleted_count)
+        if d.deleted_count == 1 or upsert:
+            add_id(new)
+            self.insert_one(new)
+            ret.upserted_id = new['_id']
+        return ret
 
     def count(self, _filter=None):
         return len(self.find(_filter))
@@ -90,6 +102,15 @@ class MockDatabase:
     def __init__(self):
         self.gid = MockGidCollection()
         self.system = MockSystemCollection()
+        self.collections = {}
+
+    def __getitem__(self, key):
+        if key not in self.collections:
+            self.collections[key] = MockCollection()
+        return self.collections[key]
+
+    def __setitem__(self, key, value):
+        self.collections[key] = value
 
 
 class MockGidCollection(MockCollection):
