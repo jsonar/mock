@@ -129,6 +129,10 @@ class MockDatabase:
     def __setitem__(self, key, value):
         self.collections[key] = value
 
+    def __getattr__(self, name):
+        ''' immitate pymongo magic for collection names as attribute '''
+        return self.__getitem__(name)
+
 
 class MockGidCollection(MockCollection):
     def __init__(self, data=None):
