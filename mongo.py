@@ -8,7 +8,7 @@ def match(doc, _filter):
 
 
 class UpdateResult:
-    def __init__(self, modified, matched):
+    def __init__(self, modified=0, matched=0):
         self.modified_count = modified
         self.matched_count = matched
         self.upserted_id = None
@@ -47,6 +47,12 @@ def add_id(doc):
     return doc
 
 
+def equals(x, y):
+    return x == y if x is None else \
+        all([x[k] == y.get(k) for k in x.keys() if k != '_id']) \
+        and all([y[k] == x.get(k) for k in y.keys() if k != '_id'])
+
+
 class MockCollection:
     def __init__(self, data=None):
         self.data = [add_id(d) for d in data or []]
@@ -76,12 +82,16 @@ class MockCollection:
         return DeleteResult(1 if e else 0)
 
     def replace_one(self, old, new, upsert=False):
-        d = self.delete_one(old)
-        ret = UpdateResult(d.deleted_count, d.deleted_count)
-        if d.deleted_count == 1 or upsert:
-            add_id(new)
-            self.insert_one(new)
-            ret.upserted_id = new['_id']
+        ret = UpdateResult()
+        o = self.find_one(old)
+        ret.matched_count = 0 if o is None else 1
+        if not equals(o, new):
+            d = self.delete_one(old)
+            ret.modified_count = d.deleted_count
+            if d.deleted_count == 1 or upsert:
+                add_id(new)
+                self.insert_one(new)
+                ret.upserted_id = new['_id']
         return ret
 
     def count(self, _filter=None):
