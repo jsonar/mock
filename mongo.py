@@ -148,12 +148,12 @@ class MockGidCollection(MockCollection):
     def __init__(self, data=None):
         super().__init__(data or [
             {'_id': 1, 'gid': 1, 'gmachine_id': '1', 'hostname': 'host1',
-             'version': 9, 'current': 'True'},
+             'version': 9, 'current': True},
             {'_id': 2, 'gid': 2, 'gmachine_id': '2', 'hostname': 'host2',
-             'version': 9},
-            {'_id': 3, 'gid': 3, 'gmachine_id': '2', 'hostname': 'host2',
+             'version': 9, 'current': True},
+            {'_id': 3, 'gid': 3, 'gmachine_id': '3', 'hostname': 'host3',
              'version': 10, 'current': True},
-            {'_id': 4, 'gid': 4, 'gmachine_id': '3', 'current': True},
-            {'_id': 5, 'gid': 5, 'gmachine_id': '4', 'version': 10,
+            {'_id': 4, 'gid': 4, 'gmachine_id': '3', 'current': False},
+            {'_id': 5, 'gid': 5, 'gmachine_id': '5', 'hostname': 'host5','version': 10,
              'current': True}
         ])
