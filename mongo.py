@@ -154,6 +154,6 @@ class MockGidCollection(MockCollection):
             {'_id': 3, 'gid': 3, 'gmachine_id': '3', 'hostname': 'host3',
              'version': 10, 'current': True},
             {'_id': 4, 'gid': 4, 'gmachine_id': '3', 'current': False},
-            {'_id': 5, 'gid': 5, 'gmachine_id': '5', 'hostname': 'host5','version': 10,
-             'current': True}
+            {'_id': 5, 'gid': 5, 'gmachine_id': '5', 'hostname': 'host5',
+             'version': 10, 'current': True}
         ])
