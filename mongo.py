@@ -101,6 +101,9 @@ class MockCollection:
         if self.find({'_id': doc['_id']}):
             raise DuplicateKeyError
 
+    def clear(self):
+        self.data = []
+
 
 class MockSystemCollection(MockCollection):
     def __init__(self, data=None):
