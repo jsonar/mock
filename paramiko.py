@@ -1,3 +1,6 @@
+import os
+
+
 class MockTransport:
     def __init__(self, *kargs):
         pass
@@ -39,6 +42,5 @@ class MockSFTPClient:
     def _request(self, **kwargs):
         pass
 
-    def stat(self, _):
-        # all remote files do not exist for now
-        raise IOError('File does not exist')
+    def stat(self, path):
+        return os.stat(path)
