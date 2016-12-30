@@ -44,3 +44,6 @@ class MockSFTPClient:
 
     def stat(self, path):
         return os.stat(path)
+
+    def unlink(self, path):
+        os.unlink(path)
