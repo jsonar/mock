@@ -104,6 +104,16 @@ class MockCollection:
     def clear(self):
         self.data = []
 
+    def aggregate(self, pipeline):
+        # only support a single aggregate for now
+        assert pipeline == [{'$group': {
+            '_id': None,
+            'alldocs': {
+                '$push': '$$CURRENT'
+            }
+        }}]
+        return iter([{'_id': None, 'alldocs': self.find()}])
+
 
 class MockSystemCollection(MockCollection):
     def __init__(self, data=None):
