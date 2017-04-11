@@ -1,4 +1,5 @@
 from bson import ObjectId
+from pymongo.errors import DuplicateKeyError
 
 
 def match(doc, _filter):
@@ -32,14 +33,6 @@ class MockMongoClient:
 
     def get_default_database(self):
         return self.db
-
-
-class MockException(Exception):
-    pass
-
-
-class DuplicateKeyError(MockException):
-    pass
 
 
 def add_id(doc):
@@ -99,7 +92,7 @@ class MockCollection:
 
     def _check_duplicate(self, doc):
         if self.find({'_id': doc['_id']}):
-            raise DuplicateKeyError
+            raise DuplicateKeyError('mock duplicate id: %s' % doc['_id'])
 
     def clear(self):
         self.data = []
