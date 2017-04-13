@@ -5,7 +5,7 @@ class MockTransport:
     def __init__(self, *kargs):
         pass
 
-    def start_client(self):
+    def start_client(self, **kargs):
         pass
 
     def auth_publickey(self, *kargs):
@@ -23,11 +23,10 @@ class MockTransport:
     def close(self):
         pass
 
-
 class MockSFTPClient:
 
     @classmethod
-    def from_transport(cls, _):
+    def from_transport_(cls, t, **kargs):
         return cls()
 
     def chdir(self, _):
