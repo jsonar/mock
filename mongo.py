@@ -25,6 +25,11 @@ class InsertManyResult:
         self.inserted_ids = ids
 
 
+class InsertOneResult:
+    def __init__(self, inserted_id):
+        self.inserted_id = inserted_id
+
+
 class MockMongoClient:
     def __init__(self, uri):
         self.db = MockDatabase()
@@ -60,6 +65,7 @@ class MockCollection:
         doc_with_id = add_id(doc)
         self._check_duplicate(doc_with_id)
         self.data.append(doc_with_id)
+        return InsertOneResult(doc_with_id['_id'])
 
     def insert_many(self, docs):
         docs_with_id = [add_id(d) for d in docs or []]
