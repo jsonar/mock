@@ -1,5 +1,5 @@
 from bson import ObjectId
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, InvalidOperation
 
 
 def match(doc, _filter):
@@ -66,6 +66,19 @@ class MockCollection:
         self._check_duplicate(doc_with_id)
         self.data.append(doc_with_id)
         return InsertOneResult(doc_with_id['_id'])
+
+    def update_one(self, _filter, update):
+        doc = self.find_one(_filter)
+        matched = 0 if doc is None else 1
+        modified = 0
+        if doc:
+            for k, v in update.items():
+                if k == '$set':
+                    doc.update(v)
+                    modified = 1
+                else:
+                    raise InvalidOperation
+        return UpdateResult(matched=matched, modified=modified)
 
     def insert_many(self, docs):
         docs_with_id = [add_id(d) for d in docs or []]
