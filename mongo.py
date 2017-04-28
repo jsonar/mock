@@ -13,6 +13,13 @@ class UpdateResult:
         self.modified_count = modified
         self.matched_count = matched
         self.upserted_id = None
+    @property
+    def raw_result(self):
+        return {
+            'modified': self.modified_count,
+            'matched': self.matched_count,
+            'upserted_id': self.upserted_id
+            }
 
 
 class DeleteResult:
