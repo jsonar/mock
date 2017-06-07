@@ -60,6 +60,7 @@ def equals(x, y):
 
 class MockCollection:
     def __init__(self, data=None):
+        self.db = None
         self.data = [add_id(d) for d in data or []]
 
     def find_one(self, _filter=None):
@@ -133,11 +134,16 @@ class MockCollection:
         }}]
         return iter([{'_id': None, 'alldocs': self.find()}])
 
+    def drop(self):
+        self.db.drop_collection(self)
+
 
 class MockSystemCollection(MockCollection):
-    def __init__(self, data=None):
+    def __init__(self, db, data=None):
         super().__init__(data)
+        self.db = db
         self.views = MockCollection()
+        self.views.db = db
         self.ingest = MockCollection([
             {
                 '_id': 'instance',
@@ -155,29 +161,44 @@ class MockSystemCollection(MockCollection):
                 'buffer_size': 8 << 30
             }
         ])
+        self.ingest.db = db
 
 
 class MockDatabase:
     def __init__(self):
-        self.gid = MockGidCollection()
-        self.system = MockSystemCollection()
+        self.gid = MockGidCollection(self)
+        self.system = MockSystemCollection(self)
         self.collections = {}
 
     def __getitem__(self, key):
         if key not in self.collections:
-            self.collections[key] = MockCollection()
+            c = MockCollection()
+            c.db = self
+            self.collections[key] = c
         return self.collections[key]
 
     def __setitem__(self, key, value):
+        value.db = self
         self.collections[key] = value
 
     def __getattr__(self, name):
         ''' immitate pymongo magic for collection names as attribute '''
         return self.__getitem__(name)
 
+    def collection_names(self):
+        return self.collections.keys()
+
+    def drop_collection(self, collection):
+        name = None
+        for name, c in self.collections.items():
+            if collection is c:
+                break
+        if name:
+            del self.collections[name]
+
 
 class MockGidCollection(MockCollection):
-    def __init__(self, data=None):
+    def __init__(self, db, data=None):
         super().__init__(data or [
             {'_id': 1, 'gid': 1, 'gmachine_id': '1', 'hostname': 'host1',
              'version': 9, 'current': True},
@@ -190,3 +211,4 @@ class MockGidCollection(MockCollection):
             {'_id': 5, 'gid': 5, 'gmachine_id': '5', 'hostname': 'host5',
              'version': 10, 'current': True}
         ])
+        self.db = db
