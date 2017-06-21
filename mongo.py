@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError, InvalidOperation
 
@@ -58,6 +59,18 @@ def equals(x, y):
         and all([y[k] == x.get(k) for k in y.keys() if k != '_id'])
 
 
+def fix_date(doc):
+    if isinstance(doc, dict):
+        ret = dict()
+        for k, v in doc.items():
+            ret[k] = fix_date(v)
+        return ret
+    if isinstance(doc, datetime) and doc.tzinfo is not None:
+        return doc.astimezone(tz=timezone.utc).replace(tzinfo=None)
+
+    return doc
+
+
 class MockCollection:
     def __init__(self, data=None):
         self.db = None
@@ -70,10 +83,10 @@ class MockCollection:
         return [e for e in self.data if match(e, _filter)]
 
     def insert_one(self, doc):
-        doc_with_id = add_id(doc)
-        self._check_duplicate(doc_with_id)
-        self.data.append(doc_with_id)
-        return InsertOneResult(doc_with_id['_id'])
+        doc = add_id(fix_date(doc))
+        self._check_duplicate(doc)
+        self.data.append(doc)
+        return InsertOneResult(doc['_id'])
 
     def update_one(self, _filter, update):
         doc = self.find_one(_filter)
@@ -82,14 +95,14 @@ class MockCollection:
         if doc:
             for k, v in update.items():
                 if k == '$set':
-                    doc.update(v)
+                    doc.update(fix_date(v))
                     modified = 1
                 else:
                     raise InvalidOperation
         return UpdateResult(matched=matched, modified=modified)
 
     def insert_many(self, docs):
-        docs_with_id = [add_id(d) for d in docs or []]
+        docs_with_id = [add_id(fix_date(d)) for d in docs or []]
         for doc in docs_with_id:
             self._check_duplicate(doc)
         self.data.extend(docs_with_id)
@@ -109,9 +122,9 @@ class MockCollection:
             d = self.delete_one(old)
             ret.modified_count = d.deleted_count
             if d.deleted_count == 1 or upsert:
-                add_id(new)
-                self.insert_one(new)
-                ret.upserted_id = new['_id']
+                doc = add_id(fix_date(new))
+                self.insert_one(doc)
+                ret.upserted_id = doc['_id']
         return ret
 
     def count(self, _filter=None):
