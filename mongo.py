@@ -1,3 +1,4 @@
+import os.path
 from datetime import datetime, timezone
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError, InvalidOperation
@@ -43,9 +44,16 @@ class MockMongoClient:
         self.db = MockDatabase()
         self.uri = uri
         self.is_primary = True
+        self.databases = {}
 
     def get_default_database(self):
         return self.db
+
+    def __getitem__(self, key):
+        if key not in self.databases:
+            db = MockDatabase()
+            self.databases[key] = db
+        return self.databases[key]
 
 
 def add_id(doc):
@@ -182,6 +190,8 @@ class MockDatabase:
         self.gid = MockGidCollection(self)
         self.system = MockSystemCollection(self)
         self.collections = {}
+        self.return_from_next_command = None
+        self.raise_on_next_command = None
 
     def __getitem__(self, key):
         if key not in self.collections:
@@ -208,6 +218,22 @@ class MockDatabase:
                 break
         if name:
             del self.collections[name]
+
+    def command(self, cmd):
+        it = iter(cmd)
+        sonar_command = next(it)
+        assert cmd[sonar_command] == 1
+        if sonar_command == 'merge_part':
+            assert 'source' in cmd
+            assert os.path.exists(cmd['source'])
+            assert os.path.isdir(cmd['source'])
+        if self.raise_on_next_command:
+            e = self.raise_on_next_command
+            self.raise_on_next_command = None
+            raise e
+        ret = self.return_from_next_command
+        self.return_from_next_command = None
+        return ret
 
 
 class MockGidCollection(MockCollection):
