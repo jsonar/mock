@@ -192,6 +192,7 @@ class MockDatabase:
         self.collections = {}
         self.return_from_next_command = None
         self.raise_on_next_command = None
+        self.name = 'mock_db'
 
     def __getitem__(self, key):
         if key not in self.collections:
