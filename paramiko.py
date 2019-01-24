@@ -1,4 +1,5 @@
 import os
+import shutil
 
 
 class MockTransport:
@@ -23,6 +24,7 @@ class MockTransport:
     def close(self):
         pass
 
+
 class MockSFTPClient:
 
     @classmethod
@@ -46,3 +48,6 @@ class MockSFTPClient:
 
     def unlink(self, path):
         os.unlink(path)
+
+    def get(self, remote, local):
+        shutil.copy(remote, local)
