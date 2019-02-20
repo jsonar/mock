@@ -10,11 +10,26 @@ def match(doc, _filter):
     return True
 
 
+def maybe_raise(func):
+    def wrapper(self, *args, **kwargs):
+        if self.raise_on_next_command is not None:
+            e, self.raise_on_next_command = self.raise_on_next_command, None
+            raise e
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
+class MockBase:
+    def __init__(self):
+        self.raise_on_next_command = None
+
+
 class UpdateResult:
     def __init__(self, modified=0, matched=0):
         self.modified_count = modified
         self.matched_count = matched
         self.upserted_id = None
+
     @property
     def raw_result(self):
         return {
@@ -79,14 +94,17 @@ def fix_date(doc):
     return doc
 
 
-class MockCollection:
+class MockCollection(MockBase):
     def __init__(self, data=None):
         self.db = None
         self.data = [add_id(d) for d in data or []]
+        super().__init__()
 
+    @maybe_raise
     def find_one(self, _filter=None):
         return next((e for e in self.data if match(e, _filter)), None)
 
+    @maybe_raise
     def find(self, _filter=None):
         return [e for e in self.data if match(e, _filter)]
 
@@ -109,6 +127,7 @@ class MockCollection:
                     raise InvalidOperation
         return UpdateResult(matched=matched, modified=modified)
 
+    @maybe_raise
     def insert_many(self, docs):
         docs_with_id = [add_id(fix_date(d)) for d in docs or []]
         for doc in docs_with_id:
@@ -142,9 +161,11 @@ class MockCollection:
         if self.find({'_id': doc['_id']}):
             raise DuplicateKeyError('mock duplicate id: %s' % doc['_id'])
 
+    @maybe_raise
     def clear(self):
         self.data = []
 
+    @maybe_raise
     def aggregate(self, pipeline):
         # only support a single aggregate for now
         assert pipeline == [{'$group': {
@@ -155,6 +176,7 @@ class MockCollection:
         }}]
         return iter([{'_id': None, 'alldocs': self.find()}])
 
+    @maybe_raise
     def drop(self):
         self.db.drop_collection(self)
 
@@ -185,14 +207,14 @@ class MockSystemCollection(MockCollection):
         self.ingest.db = db
 
 
-class MockDatabase:
+class MockDatabase(MockBase):
     def __init__(self):
         self.gid = MockGidCollection(self)
         self.system = MockSystemCollection(self)
         self.collections = {}
         self.return_from_next_command = None
-        self.raise_on_next_command = None
         self.name = 'mock_db'
+        super().__init__()
 
     def __getitem__(self, key):
         if key not in self.collections:
@@ -220,18 +242,20 @@ class MockDatabase:
         if name:
             del self.collections[name]
 
+    @maybe_raise
     def command(self, cmd):
         it = iter(cmd)
         sonar_command = next(it)
-        assert cmd[sonar_command] == 1
         if sonar_command == 'merge_part':
+            assert cmd[sonar_command] == 1
             assert 'source' in cmd
             assert os.path.exists(cmd['source'])
             assert os.path.isdir(cmd['source'])
-        if self.raise_on_next_command:
-            e = self.raise_on_next_command
-            self.raise_on_next_command = None
-            raise e
+        elif sonar_command == 'allow_duplicate_ids':
+            assert isinstance(cmd[sonar_command], dict)
+            for key, val in cmd[sonar_command].items():
+                assert isinstance(key, str)
+                assert isinstance(val, bool)
         ret = self.return_from_next_command
         self.return_from_next_command = None
         return ret
