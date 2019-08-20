@@ -244,6 +244,7 @@ class MockDatabase(MockBase):
 
     @maybe_raise
     def command(self, cmd):
+        ret = None
         it = iter(cmd)
         sonar_command = next(it)
         if sonar_command == 'merge_part':
@@ -256,7 +257,12 @@ class MockDatabase(MockBase):
             for key, val in cmd[sonar_command].items():
                 assert isinstance(key, str)
                 assert isinstance(val, bool)
-        ret = self.return_from_next_command
+        elif sonar_command == 'getParameter':
+            assert cmd[sonar_command] == 1
+            param = next(it)
+            assert cmd[param] == 1
+            ret = {'ok': 1, param: 0}
+        ret = ret or self.return_from_next_command
         self.return_from_next_command = None
         return ret
 
