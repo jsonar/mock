@@ -2,6 +2,8 @@ import os.path
 from datetime import datetime, timezone
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError, InvalidOperation
+import re
+import json
 
 
 def match(doc, _filter):
@@ -135,6 +137,12 @@ class MockCollection(MockBase):
         self.data.extend(docs_with_id)
         return InsertManyResult([d['_id'] for d in docs_with_id])
 
+    def bulk_write(self, cmds, ordered=False):
+        for cmd in cmds:
+            out = self.update_one(cmd._filter, cmd._doc)
+            if not out.modified_count:
+                self.insert_one(cmd._doc)
+
     def delete_one(self, _filter):
         e = self.find_one(_filter)
         if e:
@@ -233,6 +241,9 @@ class MockDatabase(MockBase):
 
     def collection_names(self):
         return self.collections.keys()
+
+    def list_collection_names(self):
+        return self.collection_names()
 
     def drop_collection(self, collection):
         name = None
