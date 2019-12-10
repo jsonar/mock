@@ -141,7 +141,7 @@ class MockCollection(MockBase):
         for cmd in cmds:
             out = self.update_one(cmd._filter, cmd._doc)
             if not out.modified_count:
-                self.insert_one(cmd._doc)
+                self.insert_one(cmd._doc['$set'])
 
     def delete_one(self, _filter):
         e = self.find_one(_filter)
