@@ -15,7 +15,7 @@ def _match(doc, k, v):
         for inner_k, inner_v in v.items():
             if (inner_k == "$exists"):
                 return (k in doc) == inner_v
-            return doc.get(k) == v
+    return doc.get(k) == v
 
 
 def update(doc, update):
