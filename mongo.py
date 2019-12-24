@@ -141,7 +141,8 @@ class MockCollection(MockBase):
         modified = 0
         if doc :
             modified += update(doc, update_doc)
-        else : modified = 0
+        else :
+            modified = 0
         return UpdateResult(matched=matched, modified=modified)
 
     def update_many(self, _filter, update_doc):
@@ -153,7 +154,8 @@ class MockCollection(MockBase):
                 if doc:
                     matched += 1
                     modified += update(doc, update_doc)
-                else: modified = 0
+                else:
+                    modified = 0
         return UpdateResult(matched=matched, modified=modified)
 
     @maybe_raise
