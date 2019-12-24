@@ -2,14 +2,33 @@ import os.path
 from datetime import datetime, timezone
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError, InvalidOperation
-import re
-import json
 
 
 def match(doc, _filter):
     if _filter:
-        return all([doc.get(k) == v for k, v in _filter.items()])
+        return all([_match(doc, k, v) for k, v in _filter.items()])
     return True
+
+
+def _match(doc, k, v):
+    if (isinstance(v, dict)):
+        for inner_k, inner_v in v.items():
+            if (inner_k == "$exists"):
+                return (k in doc) == inner_v
+            return doc.get(k) == v
+
+
+def update(doc, update):
+    modified = 0
+    if doc:
+        for k, v in update.items():
+            if k == '$set':
+                doc.update(fix_date(v))
+                modified = 1
+            else:
+                raise InvalidOperation
+    return modified
+
 
 
 def maybe_raise(func):
@@ -116,17 +135,25 @@ class MockCollection(MockBase):
         self.data.append(doc)
         return InsertOneResult(doc['_id'])
 
-    def update_one(self, _filter, update):
+    def update_one(self, _filter, update_doc):
         doc = self.find_one(_filter)
         matched = 0 if doc is None else 1
         modified = 0
-        if doc:
-            for k, v in update.items():
-                if k == '$set':
-                    doc.update(fix_date(v))
-                    modified = 1
-                else:
-                    raise InvalidOperation
+        if doc :
+            modified += update(doc, update_doc)
+        else : modified = 0
+        return UpdateResult(matched=matched, modified=modified)
+
+    def update_many(self, _filter, update_doc):
+        modified = 0
+        matched = 0
+        to_update = self.find(_filter)
+        if to_update:
+            for doc in to_update:
+                if doc:
+                    matched += 1
+                    modified += update(doc, update_doc)
+                else: modified = 0
         return UpdateResult(matched=matched, modified=modified)
 
     @maybe_raise
