@@ -17,4 +17,4 @@ def test_match_filter_key_not_dict():
     coll.insert_one({'_id': 'a'})
     mongo_mock_client['db']['coll'] = coll
 
-    assert coll.find({'_id': 'a'}) == {'_id': 'a'}
+    assert coll.find({'_id': 'a'}) == [{'_id': 'a'}]
