@@ -51,3 +51,6 @@ class MockSFTPClient:
 
     def get(self, remote, local):
         shutil.copy(remote, local)
+
+    def listdir(self, path):
+        return os.listdir(path)
