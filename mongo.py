@@ -30,7 +30,6 @@ def update(doc, update):
     return modified
 
 
-
 def maybe_raise(func):
     def wrapper(self, *args, **kwargs):
         if self.raise_on_next_command is not None:
@@ -139,9 +138,9 @@ class MockCollection(MockBase):
         doc = self.find_one(_filter)
         matched = 0 if doc is None else 1
         modified = 0
-        if doc :
+        if doc:
             modified += update(doc, update_doc)
-        else :
+        else:
             modified = 0
         return UpdateResult(matched=matched, modified=modified)
 
