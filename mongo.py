@@ -1,7 +1,7 @@
 import os.path
 from datetime import datetime, timezone
 from bson import ObjectId
-from pymongo.errors import DuplicateKeyError, InvalidOperation
+from pymongo.errors import DuplicateKeyError, InvalidOperation, BulkWriteError
 
 
 def match(doc, _filter):
@@ -158,12 +158,34 @@ class MockCollection(MockBase):
         return UpdateResult(matched=matched, modified=modified)
 
     @maybe_raise
-    def insert_many(self, docs):
+    def insert_many(self, docs, **kwargs):
         docs_with_id = [add_id(fix_date(d)) for d in docs or []]
+        ordered = kwargs['ordered'] if 'ordered' in kwargs else True
+        success = True
+        results = {
+            'nInserted': 0,
+            'nMatched': 0,
+            'nModified': 0,
+            'nRemoved': 0,
+            'nUpserted': 0,
+            'writeConcernErrors': [],
+            'writeErrors': []
+        }
         for doc in docs_with_id:
-            self._check_duplicate(doc)
-        self.data.extend(docs_with_id)
-        return InsertManyResult([d['_id'] for d in docs_with_id])
+            try:
+                self._check_duplicate(doc)
+                self.data.append(doc)
+                results['nInserted'] += 1
+            except DuplicateKeyError:
+                success = False
+                if ordered:
+                    raise BulkWriteError(results)
+                else:
+                    continue
+        if success:
+            return InsertManyResult([d['_id'] for d in docs_with_id])
+        else:
+            raise BulkWriteError(results)
 
     def bulk_write(self, cmds, ordered=False):
         for cmd in cmds:
