@@ -313,6 +313,7 @@ class MockDatabase(MockBase):
             assert 'source' in cmd
             assert os.path.exists(cmd['source'])
             assert os.path.isdir(cmd['source'])
+            ret = {'ok': 1, 'number_of_added_documents': 1}
         elif sonar_command == 'allow_duplicate_ids':
             assert isinstance(cmd[sonar_command], dict)
             for key, val in cmd[sonar_command].items():
