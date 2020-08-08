@@ -34,8 +34,8 @@ class MockSFTPClient:
     def chdir(self, _):
         pass
 
-    def mkdir(self, _):
-        pass
+    def mkdir(self, path):
+        os.mkdir(path)
 
     def close(self):
         pass
@@ -54,3 +54,6 @@ class MockSFTPClient:
 
     def listdir(self, path):
         return os.listdir(path)
+
+    def posix_rename(self, src, dst):
+        return os.rename(src, dst)
