@@ -24,9 +24,7 @@ class MockSocket:
         return self
 
     def __exit__(self, _, value, traceback):
-        if traceback is not None:
-            return False
-        return True
+        return traceback is None
 
     @maybe_raise
     def connect(self, **kwargs):
