@@ -309,10 +309,14 @@ class MockDatabase(MockBase):
         it = iter(cmd)
         sonar_command = next(it)
         if sonar_command == 'merge_part':
-            assert cmd[sonar_command] == 1
-            assert 'source' in cmd
-            assert os.path.exists(cmd['source'])
-            assert os.path.isdir(cmd['source'])
+            assert cmd[sonar_command] == 1, f'cmd[{sonar_command}] must be 1'
+            assert 'source' in cmd, f'source must be in {cmd}'
+            source = cmd['source']
+            assert os.path.exists(source), f'{source} must exist'
+            assert os.path.isdir(source), f'{source} must be a directory'
+            database = os.path.join(source, 'database')
+            assert os.path.exists(database), f'{database} must exist'
+            assert os.path.isfile(database), f'{database} must be a file'
         elif sonar_command == 'allow_duplicate_ids':
             assert isinstance(cmd[sonar_command], dict)
             for key, val in cmd[sonar_command].items():
