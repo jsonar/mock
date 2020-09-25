@@ -28,6 +28,9 @@ class MockSocket:
 
     @maybe_raise
     def connect(self, mock_address):
+        assert isinstance(mock_address, tuple)
+        assert isinstance(mock_address[0], str)
+        assert isinstance(mock_address[1], int)
         pass
 
     @staticmethod
