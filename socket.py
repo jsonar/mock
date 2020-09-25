@@ -27,7 +27,7 @@ class MockSocket:
         return traceback is None
 
     @maybe_raise
-    def connect(self, address, **kwargs):
+    def connect(self, mock_address):
         pass
 
     @staticmethod
