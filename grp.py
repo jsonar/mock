@@ -1,3 +1,5 @@
+import os
+
 from collections import namedtuple
 
 struct_group = namedtuple('struct_group',
@@ -27,14 +29,21 @@ class MockGrp:
     def getgrall(self):
         return self.db
 
-    def groupadd(self, name, gid=None):
-        for group in self.db:
-            if gid == group.gr_gid:
-                raise ValueError(f"groupadd: GID '{gid}' already exists")
-            if name == group.gr_name:
-                raise ValueError(f"groupadd: group '{name}' already exists")
+    def groupadd(self, args):
+        for arg in args:
+            if not isinstance(arg, (str, bytes, os.PathLike)):
+                raise TypeError(f"expected str, bytes or os.PathLike object, not {type(arg)}")
 
-        if gid is None:
+        if '--gid' in args:
+            gid = int(args[3])
+            name = args[4]
+            if gid in [group.gr_gid for group in self.db]:
+                raise ValueError(f"groupadd: GID '{gid}' already exists")
+        else:
+            name = args[2]
             gid = max([group.gr_gid for group in self.db]) + 1
+
+        if name in [group.gr_name for group in self.db]:
+            raise ValueError(f"groupadd: group '{name}' already exists")
 
         self.db.append(struct_group(name, 'x', int(gid), []))
