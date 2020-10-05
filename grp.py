@@ -28,10 +28,12 @@ class MockGrp:
         return self.db
 
     def groupadd(self, name, gid=None):
-        if gid in [group.gr_gid for group in self.db]:
-            raise ValueError(f"groupadd: GID '{gid}' already exists")
-        if name in [group.gr_name for group in self.db]:
-            raise ValueError(f"groupadd: group '{name}' already exists")
+        for group in self.db:
+            if gid == group.gr_gid:
+                raise ValueError(f"groupadd: GID '{gid}' already exists")
+            if name == group.gr_name:
+                raise ValueError(f"groupadd: group '{name}' already exists")
+
         if gid is None:
             gid = max([group.gr_gid for group in self.db]) + 1
 
