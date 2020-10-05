@@ -28,6 +28,11 @@ class MockGrp:
         return self.db
 
     def groupadd(self, name, gid=None):
-        if not gid:
-            gid = self.db[-1].gr_gid + 1
+        if gid in [group.gr_gid for group in self.db]:
+            raise ValueError(f"groupadd: GID '{gid}' already exists")
+        if name in [group.gr_name for group in self.db]:
+            raise ValueError(f"groupadd: group '{name}' already exists")
+        if gid is None:
+            gid = max([group.gr_gid for group in self.db]) + 1
+
         self.db.append(struct_group(name, 'x', int(gid), []))
