@@ -27,7 +27,7 @@ class MockGrp:
     def getgrall(self):
         return self.db
 
-    def addgroup(self, name, gid=None):
+    def groupadd(self, name, gid=None):
         if not gid:
             gid = self.db[-1].gr_gid + 1
         self.db.append(struct_group(name, 'x', int(gid), []))
