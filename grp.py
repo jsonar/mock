@@ -4,6 +4,8 @@ from collections import namedtuple
 
 struct_group = namedtuple('struct_group',
                           ['gr_name', 'gr_passwd', 'gr_gid', 'gr_mem'])
+groupadd_cmd = namedtuple('groupadd_cmd',
+                          ['command', 'sys_flag', 'gid_flag', 'gid', 'name'])
 
 
 class MockGrp:
@@ -30,20 +32,25 @@ class MockGrp:
         return self.db
 
     def groupadd(self, args):
+        cmd = self._groupadd_cmd(args)
+        for group in self.db:
+            if cmd.gid_flag and cmd.gid == group.gr_gid:
+                raise ValueError(f"groupadd: GID '{cmd.gid}' already exists")
+            if cmd.name == group.gr_name:
+                raise ValueError(f"groupadd: group '{cmd.name}' already exists")
+
+        self.db.append(struct_group(cmd.name, 'x', cmd.gid, []))
+
+    def _groupadd_cmd(self, args):
         for arg in args:
             if not isinstance(arg, (str, bytes, os.PathLike)):
                 raise TypeError(f"expected str, bytes or os.PathLike object, not {type(arg)}")
 
         if '--gid' in args:
-            gid = int(args[3])
-            name = args[4]
-            if gid in [group.gr_gid for group in self.db]:
-                raise ValueError(f"groupadd: GID '{gid}' already exists")
+            args[3] = int(args[3])
         else:
-            name = args[2]
-            gid = max([group.gr_gid for group in self.db]) + 1
+            args.insert(2, False)
+            args.insert(3, max([group.gr_gid for group in self.db]) + 1)
 
-        if name in [group.gr_name for group in self.db]:
-            raise ValueError(f"groupadd: group '{name}' already exists")
-
-        self.db.append(struct_group(name, 'x', int(gid), []))
+        cmd = groupadd_cmd(*args)
+        return cmd
