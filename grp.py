@@ -1,4 +1,6 @@
+import os
 from collections import namedtuple
+from subprocess import CalledProcessError
 
 struct_group = namedtuple('struct_group',
                           ['gr_name', 'gr_passwd', 'gr_gid', 'gr_mem'])
@@ -26,3 +28,20 @@ class MockGrp:
 
     def getgrall(self):
         return self.db
+
+    def groupadd(self, name, gid):
+        for arg in (name, gid):
+            if arg is not None and not isinstance(arg, (str, bytes, os.PathLike)):
+                raise TypeError(f"expected str, bytes or os.PathLike object, not {type(arg)}")
+
+        for group in self.db:
+            if gid is not None and int(gid) == group.gr_gid:
+                raise CalledProcessError(f"groupadd: GID '{gid}' already exists")
+
+            if name == group.gr_name:
+                raise CalledProcessError(f"groupadd: group '{name}' already exists")
+
+        if gid is None:
+            gid = max([group.gr_gid for group in self.db]) + 1
+
+        self.db.append(struct_group(name, 'x', int(gid), []))
