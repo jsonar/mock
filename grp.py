@@ -1,6 +1,6 @@
 import os
-
 from collections import namedtuple
+from subprocess import CalledProcessError
 
 struct_group = namedtuple('struct_group',
                           ['gr_name', 'gr_passwd', 'gr_gid', 'gr_mem'])
@@ -36,10 +36,10 @@ class MockGrp:
 
         for group in self.db:
             if gid is not None and int(gid) == group.gr_gid:
-                raise ValueError(f"groupadd: GID '{gid}' already exists")
+                raise CalledProcessError(f"groupadd: GID '{gid}' already exists")
 
             if name == group.gr_name:
-                raise ValueError(f"groupadd: group '{name}' already exists")
+                raise CalledProcessError(f"groupadd: group '{name}' already exists")
 
         if gid is None:
             gid = max([group.gr_gid for group in self.db])
