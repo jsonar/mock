@@ -42,6 +42,6 @@ class MockGrp:
                 raise CalledProcessError(f"groupadd: group '{name}' already exists")
 
         if gid is None:
-            gid = max([group.gr_gid for group in self.db])
+            gid = max([group.gr_gid for group in self.db]) + 1
 
         self.db.append(struct_group(name, 'x', int(gid), []))
