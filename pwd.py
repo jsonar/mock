@@ -1,4 +1,6 @@
+import os
 from collections import namedtuple
+from subprocess import CalledProcessError
 
 struct_passwd = namedtuple('struct_passwd',
                            ['pw_name', 'pw_passwd', 'pw_uid',
@@ -30,3 +32,18 @@ class MockPwd:
 
     def get_pwall(self):
         return self.db
+
+    def useradd(self, username, uid, groupname):
+        for arg in (username, groupname, uid):
+            if arg is not None and not isinstance(arg, (str, bytes, os.PathLike)):
+                raise TypeError(f"expected str, bytes or os.PathLike object, not {type(arg)}")
+        for user in self.db:
+            if uid is not None and int(uid) == user.pw_uid:
+                raise CalledProcessError(f"invalid user ID 'id'")
+            if username == user.pw_name:
+                raise CalledProcessError(f"useradd: user '{username}' already exists")
+        if uid is None:
+            uid = max([user.pw_uid for user in self.db]) + 1
+
+        self.db.append(struct_passwd(username, 'x', int(uid), 981,
+                                     'jSonar system user', f'/home/{username}', '/bin/bash'))
