@@ -1,13 +1,14 @@
-import os
 from collections import namedtuple
 from subprocess import CalledProcessError
+
+from test.mock.ent import MockEnt
 
 struct_passwd = namedtuple('struct_passwd',
                            ['pw_name', 'pw_passwd', 'pw_uid',
                             'pw_gid', 'pw_gecos', 'pw_dir', 'pw_shell'])
 
 
-class MockPwd:
+class MockPwd(MockEnt):
     def __init__(self, entries=None):
         if entries is None:
             entries = [
@@ -34,9 +35,7 @@ class MockPwd:
         return self.db
 
     def useradd(self, username, uid, groupname):
-        for arg in (username, groupname, uid):
-            if arg is not None and not isinstance(arg, (str, bytes, os.PathLike)):
-                raise TypeError(f"expected str, bytes or os.PathLike object, not {type(arg)}")
+        self.validate_strings(username, uid, groupname)
         for user in self.db:
             if uid is not None and int(uid) == user.pw_uid:
                 raise CalledProcessError(f"invalid user ID 'id'")
