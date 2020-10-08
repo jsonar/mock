@@ -8,7 +8,7 @@ struct_passwd = namedtuple('struct_passwd',
                             'pw_gid', 'pw_gecos', 'pw_dir', 'pw_shell'])
 
 
-class MockPwd():
+class MockPwd:
     def __init__(self, entries=None):
         if entries is None:
             entries = [

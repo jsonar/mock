@@ -7,7 +7,7 @@ struct_group = namedtuple('struct_group',
                           ['gr_name', 'gr_passwd', 'gr_gid', 'gr_mem'])
 
 
-class MockGrp():
+class MockGrp:
     def __init__(self, entries=None):
         if entries is None:
             entries = [
