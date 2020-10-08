@@ -1,6 +1,7 @@
-import os
 from collections import namedtuple
 from subprocess import CalledProcessError
+
+from test.mock.subprocess import validate_run_args
 
 struct_group = namedtuple('struct_group',
                           ['gr_name', 'gr_passwd', 'gr_gid', 'gr_mem'])
@@ -30,10 +31,7 @@ class MockGrp:
         return self.db
 
     def groupadd(self, name, gid):
-        for arg in (name, gid):
-            if arg is not None and not isinstance(arg, (str, bytes, os.PathLike)):
-                raise TypeError(f"expected str, bytes or os.PathLike object, not {type(arg)}")
-
+        validate_run_args(name, gid)
         for group in self.db:
             if gid is not None and int(gid) == group.gr_gid:
                 raise CalledProcessError(f"groupadd: GID '{gid}' already exists")
