@@ -1,14 +1,14 @@
 from collections import namedtuple
 from subprocess import CalledProcessError
 
-from test.mock.ent import MockEnt
+from test.mock.subprocess import validate_run_args
 
 struct_passwd = namedtuple('struct_passwd',
                            ['pw_name', 'pw_passwd', 'pw_uid',
                             'pw_gid', 'pw_gecos', 'pw_dir', 'pw_shell'])
 
 
-class MockPwd(MockEnt):
+class MockPwd():
     def __init__(self, entries=None):
         if entries is None:
             entries = [
@@ -35,7 +35,7 @@ class MockPwd(MockEnt):
         return self.db
 
     def useradd(self, username, uid, groupname):
-        self.validate_strings(username, uid, groupname)
+        validate_run_args(username, uid, groupname)
         for user in self.db:
             if uid is not None and int(uid) == user.pw_uid:
                 raise CalledProcessError(f"invalid user ID 'id'")

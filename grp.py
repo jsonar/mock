@@ -1,13 +1,13 @@
 from collections import namedtuple
 from subprocess import CalledProcessError
 
-from test.mock.ent import MockEnt
+from test.mock.subprocess import validate_run_args
 
 struct_group = namedtuple('struct_group',
                           ['gr_name', 'gr_passwd', 'gr_gid', 'gr_mem'])
 
 
-class MockGrp(MockEnt):
+class MockGrp():
     def __init__(self, entries=None):
         if entries is None:
             entries = [
@@ -31,7 +31,7 @@ class MockGrp(MockEnt):
         return self.db
 
     def groupadd(self, name, gid):
-        self.validate_strings(name, gid)
+        validate_run_args(name, gid)
         for group in self.db:
             if gid is not None and int(gid) == group.gr_gid:
                 raise CalledProcessError(f"groupadd: GID '{gid}' already exists")
