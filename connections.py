@@ -11,7 +11,7 @@ class MockAssetsServer:
     def __init__(self, data):
         self.db = MockedDB(data)
 
-    def requests(self, method, url, **kwargs):
+    def request(self, method, url, **kwargs):
         if method == 'GET':
             return self.get_endpoints(url, **kwargs)
         elif method == 'PUT':
