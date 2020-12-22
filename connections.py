@@ -43,7 +43,7 @@ class MockAssetsServer:
 
     def get_asset(self, asset_id):
         asset = self.db.get_asset(asset_id)
-        if asset != 'NOT FOUND':
+        if asset is not None:
             return MockResponse(json.dumps(asset), 200, 'OK')
 
         return MockResponse(f'Failed to get asset with asset_id: {asset_id} ',
@@ -53,7 +53,7 @@ class MockAssetsServer:
         asset = self.get_asset(asset_id)
         if asset.reason == 'OK':
             connection = self.db.get_connection(asset_id)
-            if (connection == 'NOT FOUND' or
+            if (connection is None or
                     connection['asset_id'] == 'missing_mandatory_fields'):
                 return MockResponse('No asset or missing mandatory fields',
                                     500, 'INTERNAL SERVER ERROR')
@@ -118,4 +118,4 @@ def item_by_asset_id(items, asset_id):
     for item in items:
         if item['asset_id'] == asset_id:
             return item
-    return 'NOT FOUND'
+    return None
