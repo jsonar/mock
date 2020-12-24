@@ -28,8 +28,7 @@ class MockAssetsServer:
             asset_id = url.rsplit('/', 1)[1]
             return self.get_asset(asset_id)
         elif connections_url in url:
-            asset_id = kwargs['fields']['asset_id']
-            return self.get_connection(asset_id)
+            pass
 
         return MockResponse('Page not found', 404, 'NOT FOUND')
 
@@ -50,17 +49,6 @@ class MockAssetsServer:
 
         return MockResponse(f'Failed to get asset with asset_id: {asset_id} ',
                             404, 'NOT FOUND')
-
-    def get_connection(self, asset_id):
-        asset = self.get_asset(asset_id)
-        if asset.reason == 'OK':
-            connection = self.db.get_connection(asset_id)
-            if (connection is None or
-                    connection['asset_id'] == 'missing_mandatory_fields'):
-                raise_max_retry_exception('500', '27902', 'get_connection')
-
-            return MockResponse(json.dumps([connection]), 200, 'OK')
-        return MockResponse(json.dumps('NOT FOUND'), 200, 'OK')
 
     def set_asset(self, asset):
         if asset and asset['asset_id'] != 'missing_mandatory_fields':
@@ -109,9 +97,6 @@ class MockedDB:
 
     def get_asset(self, asset_id):
         return item_by_asset_id(self.asset, asset_id)
-
-    def get_connection(self, asset_id):
-        return item_by_asset_id(self.connection, asset_id)
 
 
 def raise_max_retry_exception(code, port, func):
