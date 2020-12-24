@@ -1,5 +1,5 @@
 import json
-
+import urllib3
 
 crypto_url = 'https://localhost:27999/crypto/current-key'
 connection_url = 'https://localhost:27902/jsonar/SonarConnections/1.0.0'
@@ -30,6 +30,7 @@ class MockAssetsServer:
         elif connections_url in url:
             asset_id = kwargs['fields']['asset_id']
             return self.get_connection(asset_id)
+
         return MockResponse('Page not found', 404, 'NOT FOUND')
 
     def put_endpoints(self, url, **kwargs):
@@ -39,6 +40,7 @@ class MockAssetsServer:
         elif connections_url in url:
             connection = json.loads(kwargs['body'])
             return self.set_connection(connection)
+
         return MockResponse('Page not found', 404, 'NOT FOUND')
 
     def get_asset(self, asset_id):
@@ -55,26 +57,25 @@ class MockAssetsServer:
             connection = self.db.get_connection(asset_id)
             if (connection is None or
                     connection['asset_id'] == 'missing_mandatory_fields'):
-                return MockResponse('No asset or missing mandatory fields',
-                                    500, 'INTERNAL SERVER ERROR')
+                raise_max_retry_exception('500', '27902', 'get_connection')
+
             return MockResponse(json.dumps([connection]), 200, 'OK')
         return MockResponse(json.dumps('NOT FOUND'), 200, 'OK')
 
     def set_asset(self, asset):
         if asset and asset['asset_id'] != 'missing_mandatory_fields':
-            if self.db.set_asset(asset):
-                return MockResponse(json.dumps({'url': f'{assets_url}/asset/{asset["asset_id"]}'}),
-                                    201, 'CREATED')
-            return MockResponse(json.dumps(f'An asset with id: {asset["asset_id"]} already exists'),
-                                409, 'CONFLICT')
+            self.db.set_asset(asset)
+            return MockResponse(
+                json.dumps({'url': f'{assets_url}/asset/{asset["asset_id"]}'}),
+                201, 'CREATED')
         else:
-            return MockResponse(json.dumps('Bad Request'), 400, 'BAD REQUEST')
+            raise_max_retry_exception('400', '27902', 'set_asset')
 
     def set_connection(self, connection):
-        if self.db.set_connection(connection):
-            return MockResponse(json.dumps({'url': f'{connections_url}/{connection["asset_id"]}'}),
-                                201, 'CREATED')
-        return MockResponse(json.dumps('Bad Request'), 400, 'BAD REQUEST')
+        self.db.set_connection(connection)
+        return MockResponse(
+            json.dumps({'url': f'{connections_url}/{connection["asset_id"]}'}),
+            201, 'CREATED')
 
     @property
     def get_current_crypto(self):
@@ -91,27 +92,33 @@ class MockResponse:
 class MockedDB:
     def __init__(self, data):
         self.name = 'lmrm__sonarg'
-        self.asset = data['assets']
-        self.connection = data['connections']
+        self.asset = data['assets'].copy()
+        self.connection = data['connections'].copy()
 
     def set_asset(self, asset):
-        success = False
-        if asset and self.get_asset(asset['asset_id']) == 'NOT FOUND':
+        if asset and not self.get_asset(asset['asset_id']):
             self.asset.append(asset)
-            success = True
-        return success
+        else:
+            raise_max_retry_exception('400', '27902', 'db/set_asset')
 
     def set_connection(self, connection):
         if connection and connection['asset_id'] != 'missing_mandatory_fields':
             self.connection.append(connection)
-            return True
-        return False
+        else:
+            raise_max_retry_exception('400', '27902', 'db/set_connection')
 
     def get_asset(self, asset_id):
         return item_by_asset_id(self.asset, asset_id)
 
     def get_connection(self, asset_id):
         return item_by_asset_id(self.connection, asset_id)
+
+
+def raise_max_retry_exception(code, port, func):
+    raise urllib3.exceptions.MaxRetryError(
+        pool=urllib3.HTTPSConnectionPool(host='localhost', port=port),
+        url=f'localhost/{func}',
+        reason=f'too many {code} error responses')
 
 
 def item_by_asset_id(items, asset_id):
