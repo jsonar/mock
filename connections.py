@@ -1,5 +1,4 @@
 import json
-import urllib3
 
 crypto_url = 'https://localhost:27999/crypto/current-key'
 connection_url = 'https://localhost:27902/jsonar/SonarConnections/1.0.0'
@@ -13,7 +12,7 @@ class MockAssetsServer:
 
     def request(self, method, url, **kwargs):
         if method == 'GET':
-            return self.get_endpoints(url, **kwargs)
+            return self.get_endpoints(url)
         elif method == 'PUT':
             return self.put_endpoints(url, **kwargs)
         elif method == 'POST':
@@ -21,7 +20,7 @@ class MockAssetsServer:
         elif method == 'DELETE':
             pass
 
-    def get_endpoints(self, url, **kwargs):
+    def get_endpoints(self, url):
         if url == crypto_url:
             return self.get_current_crypto
         elif assets_url in url:
@@ -52,18 +51,25 @@ class MockAssetsServer:
 
     def set_asset(self, asset):
         if asset and asset['asset_id'] != 'missing_mandatory_fields':
-            self.db.set_asset(asset)
-            return MockResponse(
-                json.dumps({'url': f'{assets_url}/asset/{asset["asset_id"]}'}),
-                201, 'CREATED')
+            if self.db.set_asset(asset):
+                return MockResponse(
+                    json.dumps({'url': f'{assets_url}/asset/{asset["asset_id"]}'}),
+                    201, 'CREATED')
+            else:
+                return MockResponse('Asset exists', 409, 'CONFLICT')
         else:
-            raise_max_retry_exception('400', '27902', 'set_asset')
+            return MockResponse('Missing mandatory fields', 400,
+                                'BAD REQUEST')
 
     def set_connection(self, connection):
-        self.db.set_connection(connection)
-        return MockResponse(
-            json.dumps({'url': f'{connections_url}/{connection["asset_id"]}'}),
-            201, 'CREATED')
+        if self.db.set_connection(connection):
+            return MockResponse(
+                json.dumps(
+                    {'url': f'{connections_url}/{connection["asset_id"]}'}
+                ), 201, 'CREATED')
+        else:
+            return MockResponse('Missing mandatory fields', 400,
+                                'BAD REQUEST')
 
     @property
     def get_current_crypto(self):
@@ -84,26 +90,21 @@ class MockedDB:
         self.connection = data['connections'].copy()
 
     def set_asset(self, asset):
-        if asset and not self.get_asset(asset['asset_id']):
+        if not self.get_asset(asset['asset_id']):
             self.asset.append(asset)
+            return True
         else:
-            raise_max_retry_exception('400', '27902', 'db/set_asset')
+            return False
 
     def set_connection(self, connection):
         if connection and connection['asset_id'] != 'missing_mandatory_fields':
             self.connection.append(connection)
+            return True
         else:
-            raise_max_retry_exception('400', '27902', 'db/set_connection')
+            return False
 
     def get_asset(self, asset_id):
         return item_by_asset_id(self.asset, asset_id)
-
-
-def raise_max_retry_exception(code, port, func):
-    raise urllib3.exceptions.MaxRetryError(
-        pool=urllib3.HTTPSConnectionPool(host='localhost', port=port),
-        url=f'localhost/{func}',
-        reason=f'too many {code} error responses')
 
 
 def item_by_asset_id(items, asset_id):
