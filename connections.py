@@ -12,20 +12,23 @@ class MockAssetsServer:
 
     def request(self, method, url, **kwargs):
         if method == 'GET':
-            return self.get_endpoints(url)
+            return self.get_endpoints(url, **kwargs)
         elif method == 'PUT':
             return self.put_endpoints(url, **kwargs)
         elif method == 'POST':
-            pass
+            return self.post_endpoints(url, **kwargs)
         elif method == 'DELETE':
             pass
 
-    def get_endpoints(self, url):
+    def get_endpoints(self, url, **kwargs):
         if url == crypto_url:
             return self.get_current_crypto
         elif assets_url in url:
             asset_id = url.rsplit('/', 1)[1]
             return self.get_asset(asset_id)
+        elif connections_url in url:
+            asset_id = kwargs['fields']['asset_id']
+            return self.get_connections(asset_id)
         elif connections_url in url:
             pass
 
@@ -41,12 +44,32 @@ class MockAssetsServer:
 
         return MockResponse('Page not found', 404, 'NOT FOUND')
 
+    def post_endpoints(self, url, **kwargs):
+        if assets_url in url:
+            asset_id = url.rsplit('/', 1)[1]
+            asset = json.loads(kwargs['body'])
+            return self.update_asset(asset_id, asset)
+        elif connections_url in url:
+            _id = url.rsplit('/', 1)[1]
+            connection = json.loads(kwargs['body'])
+            return self.update_connection(_id, connection)
+
+        return MockResponse('Page not found', 404, 'NOT FOUND')
+
     def get_asset(self, asset_id):
         asset = self.db.get_asset(asset_id)
         if asset is not None:
             return MockResponse(json.dumps(asset), 200, 'OK')
 
         return MockResponse(f'Failed to get asset with asset_id: {asset_id} ',
+                            404, 'NOT FOUND')
+
+    def get_connections(self, asset_id):
+        connections = self.db.get_connections(asset_id)
+        if connections:
+            return MockResponse(json.dumps(connections), 200, 'OK')
+
+        return MockResponse(f'Failed to get connections with asset_id: {asset_id} ',
                             404, 'NOT FOUND')
 
     def set_asset(self, asset):
@@ -70,6 +93,20 @@ class MockAssetsServer:
         else:
             return MockResponse('Missing mandatory fields', 400,
                                 'BAD REQUEST')
+
+    def update_asset(self, asset_id, asset):
+        if self.db.update_asset(asset_id, asset):
+            return MockResponse(json.dumps(asset), 200, 'OK')
+
+        return MockResponse(f'No asset with asset_id: {asset_id} ',
+                            404, 'NOT FOUND')
+
+    def update_connection(self, _id, connection):
+        if self.db.update_connection(_id, connection):
+            return MockResponse(json.dumps(connection), 200, 'OK')
+
+        return MockResponse(f'No conection with asset_id: {_id} ',
+                            404, 'NOT FOUND')
 
     @property
     def get_current_crypto(self):
@@ -106,9 +143,35 @@ class MockedDB:
     def get_asset(self, asset_id):
         return item_by_asset_id(self.asset, asset_id)
 
+    def get_connections(self, asset_id):
+        return items_by_asset_id(self.connection, asset_id)
+
+    def update_asset(self, asset_id, asset):
+        for i, item in enumerate(self.asset):
+            if item['asset_id'] == asset_id:
+                self.asset[i] = {**item, **asset}
+                return True
+        return False
+
+    def update_connection(self, _id, connection):
+        success = False
+        for i, item in enumerate(self.connection):
+            if item['_id'] == _id:
+                self.connection[i] = {**item, **connection}
+                success = True
+        return success
+
 
 def item_by_asset_id(items, asset_id):
     for item in items:
         if item['asset_id'] == asset_id:
             return item
     return None
+
+
+def items_by_asset_id(items, asset_id):
+    results = []
+    for item in items:
+        if item['asset_id'] == asset_id:
+            results.append(item)
+    return results
