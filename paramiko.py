@@ -1,5 +1,6 @@
 import os
 import shutil
+from paramiko.sftp_attr import SFTPAttributes
 
 
 class MockTransport:
@@ -31,8 +32,8 @@ class MockSFTPClient:
     def from_transport_(cls, t, **kargs):
         return cls()
 
-    def chdir(self, _):
-        pass
+    def chdir(self, path):
+        os.chdir(path)
 
     def mkdir(self, path):
         os.mkdir(path)
@@ -57,3 +58,17 @@ class MockSFTPClient:
 
     def posix_rename(self, src, dst):
         return os.rename(src, dst)
+
+    def listdir_attr(self, path='.'):
+        ret = []
+        for filename in os.listdir(path):
+            child = os.lstat(filename)
+            ret.append(SFTPAttributes.from_stat(child, filename))
+        return ret
+
+    def rmdir(self, path):
+        return os.rmdir(path)
+
+    def getcwd(self):
+        return os.getcwd()
+
