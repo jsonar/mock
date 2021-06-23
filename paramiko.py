@@ -67,7 +67,7 @@ class MockSFTPClient:
         return ret
 
     def rmdir(self, path):
-        return os.rmdir(path)
+        os.rmdir(path)
 
     def getcwd(self):
         return os.getcwd()
