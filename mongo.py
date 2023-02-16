@@ -215,6 +215,9 @@ class MockCollection(MockBase):
     def count(self, _filter=None):
         return len(self.find(_filter))
 
+    def count_documents(self, _filter=None):
+        return self.count(_filter=_filter)
+
     def _check_duplicate(self, doc):
         if self.find({'_id': doc['_id']}):
             raise DuplicateKeyError('mock duplicate id: %s' % doc['_id'])
