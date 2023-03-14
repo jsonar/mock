@@ -84,6 +84,9 @@ class MockMongoClient:
     def get_default_database(self):
         return self.db
 
+    def get_database(self):
+        return self.db
+
     def __getitem__(self, key):
         if key not in self.databases:
             db = MockDatabase()
