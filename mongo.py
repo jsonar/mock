@@ -75,11 +75,12 @@ class InsertOneResult:
 
 
 class MockMongoClient:
-    def __init__(self, uri):
+    def __init__(self, uri, directConnection=False):
         self.db = MockDatabase()
         self.uri = uri
         self.is_primary = True
         self.databases = {}
+        self.directConnection = directConnection
 
     def get_default_database(self):
         return self.db
