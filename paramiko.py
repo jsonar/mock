@@ -2,7 +2,6 @@ import os
 import shutil
 from paramiko.sftp_attr import SFTPAttributes
 
-
 class MockTransport:
     def __init__(self, *kargs):
         pass
@@ -27,7 +26,6 @@ class MockTransport:
 
 
 class MockSFTPClient:
-
     @classmethod
     def from_transport_(cls, t, **kargs):
         return cls()
@@ -59,7 +57,7 @@ class MockSFTPClient:
     def posix_rename(self, src, dst):
         return os.rename(src, dst)
 
-    def listdir_attr(self, path='.'):
+    def listdir_attr(self, path="."):
         ret = []
         for filename in os.listdir(path):
             child = os.lstat(filename)
@@ -72,3 +70,10 @@ class MockSFTPClient:
     def getcwd(self):
         return os.getcwd()
 
+    def get_channel(self):
+        return MockChannel()
+
+
+class MockChannel:
+    def getpeername(self):
+        return ("127.0.0.1", None)
