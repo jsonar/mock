@@ -75,5 +75,11 @@ class MockSFTPClient:
 
 
 class MockChannel:
+    def __init__(self):
+        self.timeout = 0
+
+    def settimeout(self, timeout):
+        self.timeout = timeout
+
     def getpeername(self):
         return ("127.0.0.1", None)
