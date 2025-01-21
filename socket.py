@@ -36,3 +36,7 @@ class MockSocket:
     @staticmethod
     def sendall(self, **kwargs):
         pass
+
+    @staticmethod
+    def settimeout(self, **kwargs):
+        pass
