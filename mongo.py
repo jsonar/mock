@@ -152,6 +152,7 @@ class MockCollection(MockBase):
     def update_many(self, _filter, update_doc, upsert=False):
         modified = 0
         matched = 0
+        upserted = 0
 
         to_update = self.find(_filter)
         if to_update:
@@ -165,10 +166,10 @@ class MockCollection(MockBase):
         if not to_update and upsert:
             set_doc = update_doc.get('$set', None)
             update_doc = set_doc if set_doc else update_doc
-
+            upserted = 1
             self.insert_one({**update_doc, **_filter})
 
-        return UpdateResult(matched=matched, modified=modified)
+        return UpdateResult(matched=matched, modified=modified, upserted=upserted)
 
     @maybe_raise
     def insert_many(self, docs, **kwargs):
