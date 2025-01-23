@@ -56,6 +56,7 @@ class UpdateResult:
         return {
             'modified': self.modified_count,
             'matched': self.matched_count,
+            'upserted': self.upsert_count,
             'upserted_id': self.upserted_id
             }
 
