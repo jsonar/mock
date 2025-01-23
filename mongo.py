@@ -45,9 +45,10 @@ class MockBase:
 
 
 class UpdateResult:
-    def __init__(self, modified=0, matched=0):
+    def __init__(self, modified=0, matched=0, upserted=0):
         self.modified_count = modified
         self.matched_count = matched
+        self.upsert_count = upserted
         self.upserted_id = None
 
     @property
@@ -148,9 +149,10 @@ class MockCollection(MockBase):
             modified = 0
         return UpdateResult(matched=matched, modified=modified)
 
-    def update_many(self, _filter, update_doc):
+    def update_many(self, _filter, update_doc, upsert=False):
         modified = 0
         matched = 0
+
         to_update = self.find(_filter)
         if to_update:
             for doc in to_update:
@@ -159,6 +161,13 @@ class MockCollection(MockBase):
                     modified += update(doc, update_doc)
                 else:
                     modified = 0
+
+        if not to_update and upsert:
+            set_doc = update_doc.get('$set', None)
+            update_doc = set_doc if set_doc else update_doc
+
+            self.insert_one({**update_doc, **_filter})
+
         return UpdateResult(matched=matched, modified=modified)
 
     @maybe_raise
