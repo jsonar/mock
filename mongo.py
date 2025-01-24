@@ -314,7 +314,9 @@ class MockDatabase(MockBase):
         return self.collection_names()
     
     def create_collection(self, name): 
-        self.collections[name] = {}
+        c = MockCollection()
+        c.db = self
+        self.collections[name] = c
     
     def drop_collection(self, collection):
         name = None
