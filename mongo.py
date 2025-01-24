@@ -312,7 +312,10 @@ class MockDatabase(MockBase):
 
     def list_collection_names(self):
         return self.collection_names()
-
+    
+    def create_collection(self, name): 
+        self.collections[name] = {}
+    
     def drop_collection(self, collection):
         name = None
         for name, c in self.collections.items():
